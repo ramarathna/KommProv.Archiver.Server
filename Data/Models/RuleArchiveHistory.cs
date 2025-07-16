@@ -10,7 +10,7 @@ namespace KommProv.Archiver.Server.Data.Models
 
         public Guid ArchiveId { get; set; }
 
-        public DateTime StartDate { get; set; }
+        public DateTime? StartDate { get; set; }
         public DateTime EndDate { get; set; }
 
         public string ProviderId { get; set; }

@@ -13,21 +13,27 @@ namespace KommProv.Archiver.Server.Data
             _context = context;
         }
 
-        public async Task<string> ArchiveRulesAsync(DateTime start, DateTime end, string providerId, string archivedBy, Guid archiveId)
+        public async Task<string> ArchiveRulesAsync(DateTime? start, DateTime end, string providerId, string archivedBy, Guid archiveId)
         {
             var query = _context.Rules
-                .Where(r => r.StartDate >= start && r.EndDate <= end);
+                .Where(r => r.EndDate <= end);
+
+            if (start.HasValue)
+                query = query.Where(r => r.StartDate >= start.Value);
 
             if (!string.IsNullOrWhiteSpace(providerId))
                 query = query.Where(r => r.ProviderId == providerId);
 
-            var toArchive = await query.ToListAsync();
+            // Load complete Rule entities (with tracking) for bulk deletion + archiveId setting
+            var toArchive = await query.AsNoTracking().ToListAsync();
+
             if (!toArchive.Any())
                 return "Keine Regeln zum Archivieren.";
 
-            // Set ArchiveId in Rule (optional if you delete after archiving)
+            // Set ArchiveId
             toArchive.ForEach(r => r.ArchiveId = archiveId);
 
+            // Map Rule → RuleArchive
             var archived = toArchive.Select(r => new RuleArchive
             {
                 Id = r.Id,
@@ -67,7 +73,7 @@ namespace KommProv.Archiver.Server.Data
             var history = new RuleArchiveHistory
             {
                 ArchiveId = archiveId,
-                StartDate = start,
+                StartDate = start ?? DateTime.MinValue,
                 EndDate = end,
                 ProviderId = providerId,
                 ArchivedAt = DateTime.UtcNow,
