@@ -9,22 +9,30 @@
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IOptions<LoginSettings> LoginSettings
 
-<h3>Login</h3>
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
+        <h3 class="text-center mb-4">🔒 KommProv Login</h3>
 
-<div class="form-group">
-    <label>Username</label>
-    <input @bind="username" class="form-control" />
-</div>
-<div class="form-group">
-    <label>Password</label>
-    <input @bind="password" type="password" class="form-control" />
-</div>
-<button class="btn btn-primary" @onclick="HandleLogin">Login</button>
+        <div class="form-group mb-3">
+            <label for="username">👤 Benutzername</label>
+            <input id="username" @bind="username" class="form-control" placeholder="Benutzername eingeben" />
+        </div>
 
-@if (!string.IsNullOrEmpty(error))
-{
-    <p class="text-danger mt-2">@error</p>
-}
+        <div class="form-group mb-3">
+            <label for="password">🔑 Passwort</label>
+            <input id="password" @bind="password" type="password" class="form-control" placeholder="Passwort eingeben" />
+        </div>
+
+        <button class="btn btn-primary w-100" @onclick="HandleLogin">Anmelden</button>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger mt-3" role="alert">
+                @error
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     private string username;
