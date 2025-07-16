@@ -8,6 +8,8 @@
 @inject Context Db
 @inject IHttpContextAccessor HttpContextAccessor
 @inject IOptions<LoginSettings> LoginSettings
+@inject UserSessionService UserSession
+
 
 <div class="d-flex justify-content-center align-items-center vh-100">
     <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
@@ -74,7 +76,7 @@
                 return;
             }
 
-            HttpContextAccessor.HttpContext?.Session.SetString("Username", username);
+            UserSession.Username = username;
             Navigation.NavigateTo("/archive", forceLoad: true);
         }
         catch (Exception ex)

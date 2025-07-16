@@ -26,6 +26,8 @@ builder.Services.AddSession(options =>
 });
 
 // Dienste registrieren
+builder.Services.AddScoped<UserSessionService>();
+
 builder.Services.AddScoped<RuleArchivingService>();
 
 var app = builder.Build();

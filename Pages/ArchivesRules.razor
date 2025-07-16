@@ -3,6 +3,7 @@
 @inject RuleArchivingService ArchiveService
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager Navigation
+@inject UserSessionService UserSession
 
 <h3>Archivierung von Regeln</h3>
 
@@ -35,10 +36,10 @@
 
     protected override void OnInitialized()
     {
-        username = HttpContextAccessor.HttpContext?.Session?.GetString("Username");
-        if (string.IsNullOrEmpty(username))
+        username = UserSession.Username;
+        if (!UserSession.IsAuthenticated)
         {
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("/", forceLoad: true); // back to login
         }
     }
 
