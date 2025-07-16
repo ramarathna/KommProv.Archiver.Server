@@ -13,7 +13,7 @@ namespace KommProv.Archiver.Server.Data
             _context = context;
         }
 
-        public async Task<string> ArchiveRulesAsync(DateTime start, DateTime end, string providerId)
+        public async Task<string> ArchiveRulesAsync(DateTime start, DateTime end, string providerId, string archivedBy, Guid archiveId)
         {
             var query = _context.Rules
                 .Where(r => r.StartDate >= start && r.EndDate <= end);
@@ -24,6 +24,9 @@ namespace KommProv.Archiver.Server.Data
             var toArchive = await query.ToListAsync();
             if (!toArchive.Any())
                 return "Keine Regeln zum Archivieren.";
+
+            // Set ArchiveId in Rule (optional if you delete after archiving)
+            toArchive.ForEach(r => r.ArchiveId = archiveId);
 
             var archived = toArchive.Select(r => new RuleArchive
             {
@@ -57,15 +60,30 @@ namespace KommProv.Archiver.Server.Data
                 RetailDiscount = r.RetailDiscount,
                 DeviceCategory = r.DeviceCategory,
                 ModifiedBy = r.ModifiedBy,
-                LastModified = r.LastModified
+                LastModified = r.LastModified,
+                ArchiveId = archiveId
             }).ToList();
+
+            var history = new RuleArchiveHistory
+            {
+                ArchiveId = archiveId,
+                StartDate = start,
+                EndDate = end,
+                ProviderId = providerId,
+                ArchivedAt = DateTime.UtcNow,
+                ArchivedBy = archivedBy,
+                Action = "Archived",
+                Description = $"Archiviert {archived.Count} Regeln"
+            };
 
             using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                await _context.RuleArchiveHistories.AddAsync(history);
                 await _context.BulkInsertAsync(archived);
                 await _context.BulkDeleteAsync(toArchive);
                 await tx.CommitAsync();
+
                 return $"Archiviert: {archived.Count} Regeln.";
             }
             catch (Exception ex)

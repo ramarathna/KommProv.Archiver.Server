@@ -47,6 +47,6 @@ namespace KommProv.Archiver.Server.Data.Models
         public string ModifiedBy { get; set; }
         public DateTime? LastModified { get; set; }
 
-        
+        public Guid? ArchiveId { get; set; }
     }
 }

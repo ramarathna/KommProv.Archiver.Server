@@ -1,0 +1,77 @@
+﻿@page "/"
+@using KommProv.Archiver.Server.Data
+@using KommProv.Archiver.Server.Data.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Options
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+@inject Context Db
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IOptions<LoginSettings> LoginSettings
+
+<h3>Login</h3>
+
+<div class="form-group">
+    <label>Username</label>
+    <input @bind="username" class="form-control" />
+</div>
+<div class="form-group">
+    <label>Password</label>
+    <input @bind="password" type="password" class="form-control" />
+</div>
+<button class="btn btn-primary" @onclick="HandleLogin">Login</button>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <p class="text-danger mt-2">@error</p>
+}
+
+@code {
+    private string username;
+    private string password;
+    private string error;
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            error = "Bitte Benutzername und Passwort eingeben.";
+            return;
+        }
+
+        var loginCfg = LoginSettings.Value;
+
+        try
+        {
+            using var pc = new System.DirectoryServices.AccountManagement.PrincipalContext(
+                System.DirectoryServices.AccountManagement.ContextType.Domain,
+                loginCfg.Domain,
+                loginCfg.SystemUsername,
+                loginCfg.SystemPassword);
+
+            bool isValid = pc.ValidateCredentials(username, password);
+            if (!isValid)
+            {
+                error = "Anmeldedaten ungültig.";
+                return;
+            }
+
+            var role = await Db.UserRoles.FirstOrDefaultAsync(r =>
+                (r.TypeId == 1 || r.TypeId == 2 || r.TypeId == 3)
+                && r.UserId.ToLower() == username.ToLower());
+
+            if (role == null)
+            {
+                error = "Zugriff auf KommProv nicht erlaubt.";
+                return;
+            }
+
+            HttpContextAccessor.HttpContext?.Session.SetString("Username", username);
+            Navigation.NavigateTo("/archive", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            error = "Fehler bei der Anmeldung: " + ex.Message;
+        }
+    }
+}
