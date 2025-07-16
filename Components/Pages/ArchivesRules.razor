@@ -1,0 +1,43 @@
+﻿@using KommProv.Archiver.Server.Data
+@page "/archive"
+@inject RuleArchivingService ArchiveService
+
+<h3>Archivierung von Regeln</h3>
+
+<div class="form-group">
+    <label>Startdatum:</label>
+    <input type="date" @bind="startDate" class="form-control" />
+</div>
+<div class="form-group">
+    <label>Enddatum:</label>
+    <input type="date" @bind="endDate" class="form-control" />
+</div>
+<div class="form-group">
+    <label>Provider ID (optional):</label>
+    <input type="text" @bind="providerId" class="form-control" />
+</div>
+
+<button class="btn btn-primary" @onclick="Archive">Archivieren</button>
+
+@if (!string.IsNullOrEmpty(result))
+{
+    <p class="mt-2">@result</p>
+}
+
+@code {
+    private DateTime? startDate;
+    private DateTime? endDate;
+    private string providerId;
+    private string result;
+
+    private async Task Archive()
+    {
+        if (!startDate.HasValue || !endDate.HasValue)
+        {
+            result = "Start- und Enddatum sind erforderlich.";
+            return;
+        }
+
+        result = await ArchiveService.ArchiveRulesAsync(startDate.Value, endDate.Value, providerId);
+    }
+}
