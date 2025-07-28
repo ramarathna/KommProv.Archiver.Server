@@ -10,7 +10,10 @@ builder.Services.AddServerSideBlazor();
 
 // EF DB-Context
 builder.Services.AddDbContext<Context>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions =>
+    {
+        sqlOptions.CommandTimeout(300); // Set 5-minute timeout for EF commands
+    }));
 
 // App-Einstellungen (LoginSettings)
 builder.Services.Configure<LoginSettings>(

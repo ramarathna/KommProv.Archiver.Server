@@ -10,14 +10,13 @@
 @inject IOptions<LoginSettings> LoginSettings
 @inject UserSessionService UserSession
 
-
-<div class="d-flex justify-content-center align-items-center vh-100">
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
     <div class="card shadow p-4" style="width: 100%; max-width: 400px;">
-        <h3 class="text-center mb-4">🔒 KommProv Login</h3>
+        <h4 class="text-center mb-4 text-primary">🔒 KommProv Login</h4>
 
         <div class="form-group mb-3">
             <label for="username">👤 Benutzername</label>
-            <input id="username" @bind="username" class="form-control" placeholder="Benutzername eingeben" />
+            <input id="username" @bind="username" class="form-control" placeholder="Benutzername eingeben" autofocus />
         </div>
 
         <div class="form-group mb-3">
@@ -25,11 +24,13 @@
             <input id="password" @bind="password" type="password" class="form-control" placeholder="Passwort eingeben" />
         </div>
 
-        <button class="btn btn-primary w-100" @onclick="HandleLogin">Anmelden</button>
+        <button class="btn btn-primary w-100" @onclick="HandleLogin" disabled="@isLoading">
+            @(isLoading ? "Wird überprüft..." : "Anmelden")
+        </button>
 
         @if (!string.IsNullOrEmpty(error))
         {
-            <div class="alert alert-danger mt-3" role="alert">
+            <div class="alert alert-danger mt-3 text-center" role="alert">
                 @error
             </div>
         }
@@ -40,19 +41,23 @@
     private string username;
     private string password;
     private string error;
+    private bool isLoading = false;
 
     private async Task HandleLogin()
     {
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-        {
-            error = "Bitte Benutzername und Passwort eingeben.";
-            return;
-        }
-
-        var loginCfg = LoginSettings.Value;
+        error = string.Empty;
+        isLoading = true;
 
         try
         {
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                error = "Bitte Benutzername und Passwort eingeben.";
+                return;
+            }
+
+            var loginCfg = LoginSettings.Value;
+
             using var pc = new System.DirectoryServices.AccountManagement.PrincipalContext(
                 System.DirectoryServices.AccountManagement.ContextType.Domain,
                 loginCfg.Domain,
@@ -75,13 +80,17 @@
                 error = "Zugriff auf KommProv nicht erlaubt.";
                 return;
             }
-
+            
             UserSession.Username = username;
-            Navigation.NavigateTo("/archive", forceLoad: true);
+            Navigation.NavigateTo("/archive");
         }
         catch (Exception ex)
         {
-            error = "Fehler bei der Anmeldung: " + ex.Message;
+            error = $"Fehler bei der Anmeldung: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 }

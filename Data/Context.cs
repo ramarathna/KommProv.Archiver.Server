@@ -14,7 +14,7 @@ namespace KommProv.Archiver.Server.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Rule>().ToTable("Rule");
+            modelBuilder.Entity<Rule>().ToTable("Rules");
             modelBuilder.Entity<RuleArchive>().ToTable("Rule_Archive");
             modelBuilder.Entity<UserRole>().ToTable("UserRoles");
             modelBuilder.Entity<RuleArchiveHistory>().ToTable("RuleArchiveHistories");

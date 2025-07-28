@@ -5,27 +5,67 @@
 @inject NavigationManager Navigation
 @inject UserSessionService UserSession
 
-<h3>Archivierung von Regeln</h3>
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow p-4 w-100" style="max-width: 600px;">
 
-<div class="form-group">
-    <label>Startdatum:</label>
-    <input type="date" @bind="startDate" class="form-control" />
-</div>
-<div class="form-group">
-    <label>Enddatum:</label>
-    <input type="date" @bind="endDate" class="form-control" />
-</div>
-<div class="form-group">
-    <label>Provider ID (optional):</label>
-    <input type="text" @bind="providerId" class="form-control" />
-</div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="text-primary">📦 Archivierung von Regeln</h4>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="Logout">🚪 Logout</button>
+        </div>
 
-<button class="btn btn-primary" @onclick="Archive">Archivieren</button>
+        <div class="row mb-3 align-items-center">
+            <div class="col-5 text-end">
+                <label class="form-label">📅 Startdatum (optional):</label>
+            </div>
+            <div class="col-7">
+                <input type="date" @bind="startDate" class="form-control" />
+            </div>
+        </div>
 
-@if (!string.IsNullOrEmpty(result))
-{
-    <p class="mt-2">@result</p>
-}
+        <div class="row mb-3 align-items-center">
+            <div class="col-5 text-end">
+                <label class="form-label">📅 <strong>Enddatum <span class="text-danger">*</span></strong>:</label>
+            </div>
+            <div class="col-7">
+                <input type="date" @bind="endDate" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <div class="col-5 text-end">
+                <label class="form-label">🏢 Provider ID (optional):</label>
+            </div>
+            <div class="col-7">
+                <input type="text" @bind="providerId" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row mb-4 align-items-center">
+            <div class="col-5 text-end">
+                <label class="form-label">🆔 Archive ID (optional):</label>
+            </div>
+            <div class="col-7">
+                <input type="text" @bind="archiveIdInput" class="form-control" />
+            </div>
+        </div>
+
+        <div class="d-grid">
+            @if (string.IsNullOrWhiteSpace(archiveIdInput))
+            {
+                <button class="btn btn-success" @onclick="Archive">▶️ Archivieren</button>
+            }
+            else
+            {
+                <button class="btn btn-danger" @onclick="UndoArchive">⏪ Undo Archivierung</button>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(result))
+        {
+            <div class="alert alert-info mt-4 text-center">@result</div>
+        }
+    </div>
+</div>
 
 @code {
     private DateTime? startDate;
@@ -33,25 +73,73 @@
     private string providerId;
     private string result;
     private string username;
+    private bool shouldRedirect;
+    private string archiveIdInput;
 
     protected override void OnInitialized()
     {
         username = UserSession.Username;
         if (!UserSession.IsAuthenticated)
         {
-            Navigation.NavigateTo("/", forceLoad: true); // back to login
+            shouldRedirect = true;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && shouldRedirect)
+        {
+            shouldRedirect = false;
+            Navigation.NavigateTo("/", forceLoad: true);
         }
     }
 
     private async Task Archive()
     {
-        if (!startDate.HasValue || !endDate.HasValue)
+        result = string.Empty;
+
+        if (!endDate.HasValue)
         {
-            result = "Start- und Enddatum sind erforderlich.";
+            result = "❗ Enddatum ist erforderlich.";
             return;
         }
 
-        var archiveId = Guid.NewGuid();
-        result = await ArchiveService.ArchiveRulesAsync(startDate.Value, endDate.Value, providerId, username, archiveId);
+        try
+        {
+            var archiveId = Guid.NewGuid();
+            archiveIdInput = archiveId.ToString();
+
+            result = await ArchiveService.ArchiveRulesAsync(startDate, endDate.Value, providerId, username, archiveId);
+        }
+        catch (Exception ex)
+        {
+            result = $"❌ Fehler: {ex.Message}";
+        }
+    }
+
+    private async Task UndoArchive()
+    {
+        result = string.Empty;
+
+        if (!Guid.TryParse(archiveIdInput, out var archiveId))
+        {
+            result = "❗ Bitte gültige Archive ID eingeben.";
+            return;
+        }
+
+        try
+        {
+            result = await ArchiveService.UndoArchiveAsync(archiveId);
+        }
+        catch (Exception ex)
+        {
+            result = $"❌ Fehler beim Undo: {ex.Message}";
+        }
+    }
+
+    private void Logout()
+    {
+        UserSession.Username = null;
+        Navigation.NavigateTo("/", forceLoad: true);
     }
 }
